@@ -1,0 +1,14 @@
+- import_tasks: vars.yml
+
+- name: Creating custom iptables policy file[s]
+  template: 
+    src: roles/iptables/templates/01-input-service-policy.j2 
+    dest: /etc/sysconfig/iptables.d/01-input-service-policy-{{ iptables_policy_name }}
+    mode: 0644
+  when: manage_iptables
+
+- name: Building iptables config file
+  assemble: 
+    src: /etc/sysconfig/iptables.d/ 
+    dest: "{{ dest_building_path }}"
+  notify: restart_iptables

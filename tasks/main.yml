@@ -1,0 +1,69 @@
+---
+
+- import_tasks: vars.yml
+
+- name: Update apt cache.
+  apt: update_cache=yes cache_valid_time=86400
+  changed_when: false
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure iptables_packages is installed.
+  package:
+    name: "{{ iptables_packages }}"
+    state: present
+
+- name: Ensuring folders exist
+  file: 
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/sysconfig/iptables.d
+
+- name: Dropping all default iptables rules
+  copy: 
+    src: "{{ item }}" 
+    dest: "/etc/sysconfig/iptables.d/{{ item }}"
+    mode: 0644
+  with_items:
+    - 99-filter-commit
+    - 98-forward-0_head
+    - 00-nat-0_head
+    - 00-nat-commit
+
+- name: Dropping templated iptables rules
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/sysconfig/iptables.d/{{ item }}"
+    mode: 0644
+  with_items:
+    - 01-input-0_head
+    - 01-input-z_foot
+    - 98-forward-z_foot
+
+- name: Configuring incoming sshd allowed IP
+  template:
+    src: 01-input-service-default-sshd.policy.j2
+    dest: /etc/sysconfig/iptables.d/01-input-allowed-sshd.policy
+    mode: 0644
+
+- name: Enabling ipv4 routing
+  sysctl: 
+    name: net.ipv4.ip_forward 
+    value: 1 
+    state: present 
+    reload: yes
+  when: iptables_gw
+
+- name: Building iptables config file
+  assemble: 
+    src: /etc/sysconfig/iptables.d/ 
+    dest: "{{ dest_building_path }}"
+  notify: restart_iptables
+
+- name: Enabling the iptables service
+  service: 
+    name: "{{ item }}" 
+    state: started 
+    enabled: yes
+  with_items:
+    - iptables

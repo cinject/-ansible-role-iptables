@@ -1,0 +1,13 @@
+---
+
+- name: rebuild_iptables
+  assemble: 
+    src: /etc/sysconfig/iptables.d/ 
+    dest: /etc/sysconfig/iptables
+  notify:
+    - restart_iptables
+
+- name: restart_iptables
+  service: 
+    name: iptables 
+    state: restarted

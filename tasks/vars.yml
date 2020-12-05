@@ -1,0 +1,11 @@
+- name: Define vars for Debian
+  set_fact:
+    iptables_packages: ["iptables", "iptables-persistent"]
+    dest_building_path: "/etc/iptables/rules.v4"
+  when: ansible_os_family == 'Debian'
+
+- name: Define vars for RedHat
+  set_fact:
+    iptables_packages: ["iptables", "iptables-services"]
+    dest_building_path: "/etc/sysconfig/iptables"
+  when: ansible_os_family == 'RedHat'
